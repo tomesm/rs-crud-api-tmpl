@@ -1,0 +1,29 @@
+[package]
+name = "passenger_service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.3"
+thiserror = "1.0"
+# JSON libs
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_derive = "1.0"
+# DB Libs
+tokio-postgres = { version = "0.7.8", features = ["with-chrono-0_4", "with-serde_json-1", "with-uuid-1"] }
+uuid = { version = "1.3.0", features = ["v4", "serde", "fast-rng", "macro-diagnostics"] }
+tokio = { version = "1.0", features = ["full"] }
+sqlx = { version = "0.5.0", features = ["postgres", "runtime-tokio-rustls","json", "macros", "uuid"] }
+sea-query = { version = "0", features = ["backend-postgres"] }
+# Custom sql builder
+sqlbuilder = { path = "../sql_builder" }
+# Web
+# rocket = "=0.5.0-rc.3"
+warp = "0.3"
+utoipa = { version = "3", features = ["uuid", "yaml"] }
+utoipa-swagger-ui = { version = "3", features = ["debug-embed"] }
+[dev-dependencies]
+anyhow = "1.0"
