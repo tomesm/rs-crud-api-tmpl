@@ -1,8 +1,9 @@
-#![allow(dead_code)]
-#![allow(unused)]
+// #![allow(dead_code)]
+// #![allow(unused)]
 
 use crate::model::{self, Db, Passenger};
 use crate::security;
+use std::convert::Infallible;
 use std::{path::Path, sync::Arc};
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -21,7 +22,7 @@ use serde_json::json;
 use utoipa_swagger_ui::Config;
 mod filter_auth;
 mod filter_utils;
-pub mod handlers;
+mod handlers;
 
 struct SecurityAddon;
 
@@ -45,23 +46,25 @@ pub async fn start_web_server(folder: &str, port: u16, db: Arc<Db>) -> Result<()
     // Prepare swagger ui
     #[derive(OpenApi)]
     #[openapi(
-        paths(handlers::list_passengers), 
+        paths(
+            handlers::list_passengers, 
+            handlers::get_passenger,
+            handlers::create_passenger,
+            handlers::update_passenger,
+            handlers::delete_passenger,
+        ),
         components(schemas(Passenger)),
-        modifiers(&SecurityAddon),
         tags(
             (name = "Passengers", description = "Passengers items management API")
         )
     )]
     struct ApiDoc;
-
-
-
     // Swagger JSON API
     let api_doc = warp::path("api-doc.json")
         .and(warp::get())
         .map(|| warp::reply::json(&ApiDoc::openapi()));
     // Swagger UI Endpoints
-    let swagger_ui = warp::path("swagger-ui")
+    let swagger_ui = warp::path("docs")
         .and(warp::get())
         .and(warp::path::full())
         .and(warp::path::tail())
@@ -81,11 +84,11 @@ pub async fn start_web_server(folder: &str, port: u16, db: Arc<Db>) -> Result<()
     let routes = api_doc
         .or(swagger_ui)
         .or(apis)
-        .or(static_site);
+        .or(static_site)
+        .recover(handle_rejection);
 
     println!("Start 127.0.0.1:{} at {}", port, folder);
-    warp::serve(routes)
-    .run(([127, 0, 0, 1], port)).await;
+    warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 
     Ok(())
 }
@@ -95,8 +98,8 @@ async fn serve_swagger(
     tail: Tail,
     config: Arc<Config<'static>>,
 ) -> Result<Box<dyn Reply + 'static>, Rejection> {
-    if full_path.as_str() == "/swagger-ui" {
-        return Ok(Box::new(warp::redirect::found(Uri::from_static("/swagger-ui/"))));
+    if full_path.as_str() == "/docs" {
+        return Ok(Box::new(warp::redirect::found(Uri::from_static("/docs/"))));
     }
 
     let path = tail.as_str();
@@ -118,6 +121,23 @@ async fn serve_swagger(
                 .body(error.to_string()),
         )),
     }
+}
+
+async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> {
+    // Print to server side
+    println!("Server ERROR: {:?}", err);
+    // TODO - Call log API for capture and store
+
+	// Build user message
+	let user_message = match err.find::<WebErrorMessage>() {
+		Some(err) => err.typ.to_string(),
+		None => "Unknown".to_string(),
+	};
+
+	let result = json!({ "errorMessage": user_message });
+	let result = warp::reply::json(&result);
+
+	Ok(warp::reply::with_status(result, warp::http::StatusCode::BAD_REQUEST))
 }
 
 #[derive(thiserror::Error, Debug)]

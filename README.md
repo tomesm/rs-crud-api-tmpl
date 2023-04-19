@@ -1,5 +1,11 @@
+# Dev Frontend
 
-# Dev Test Model All
+```sh
+npm run build -- -w
+```
+
+
+# Dev Backend Test Model All
 
 <!-- ```sh
 # Test for the database

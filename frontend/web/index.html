@@ -3,12 +3,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Passenger Portal MVC</title>
+    <title>Visa Application Portal</title>
     <link rel="icon" href="data:,">
+    <script src="js/app-bundle.js"></script>
+    <!-- <link rel="stylesheet" href="css/main.css" /> -->
+    <!-- prevent caching on localhost -->
+    <link rel="stylesheet" href="css/main.css?t=<?php echo time()?>" type="text/css"  /> 
 </head>
 
 <body>
-    Hell owfrom Passengers MVC
+    <svg style="display:none" xmlns="https://www.w3.org/2000/svg">
+        <defs>
+          <symbol id="ico-done" viewBox="0 0 24 24">
+            <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
+          </symbol>
+        </defs>
+      </svg>
+    <passenger-mvc></passenger-mvc>
 </body>
 
 </html>

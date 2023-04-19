@@ -1,5 +1,4 @@
 use crate::model::Db;
-use std::convert::Infallible;
 use std::sync::Arc;
 use warp::Filter;
 

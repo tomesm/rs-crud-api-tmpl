@@ -12,8 +12,9 @@ thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_derive = "1.0"
+serde_with = "2.3"
 # DB Libs
-tokio-postgres = { version = "0.7.8", features = ["with-chrono-0_4", "with-serde_json-1", "with-uuid-1"] }
+tokio-postgres = { version = "0.7.8", features = ["with-chrono-0_4", "with-serde_json-1", "with-uuid-0_8", "with-uuid-1"] }
 uuid = { version = "1.3.0", features = ["v4", "serde", "fast-rng", "macro-diagnostics"] }
 tokio = { version = "1.0", features = ["full"] }
 sqlx = { version = "0.5.0", features = ["postgres", "runtime-tokio-rustls","json", "macros", "uuid"] }

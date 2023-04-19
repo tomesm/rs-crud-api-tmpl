@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused)]
-
 use std::fmt;
 use std::str::FromStr;
 
@@ -8,16 +5,21 @@ use super::db::Db;
 use crate::model;
 use crate::security::UserCtx;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use sqlbuilder::SqlBuilder;
+use sqlx::types::Uuid;
 use utoipa::ToSchema;
 
 // region: use  Passenger Types
+#[serde_as]
 #[derive(sqlx::FromRow, Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Passenger {
-    #[schema(example = 1)]
-    pub id: i64,
-    #[schema(example = 1)]
-    pub uid: i64,
+    #[schema(example = "4208b168-08b2-4c45-915d-c51f6f71213b")]
+    #[serde_as(as = "DisplayFromStr")]
+    pub id: Uuid,
+    #[schema(example = "2096036b-9606-4405-995b-565a481344bc")]
+    #[serde_as(as = "DisplayFromStr")]
+    pub uid: Uuid,
     #[schema(example = "John")]
     pub first_name: String,
     #[schema(example = "Doe")]
@@ -63,9 +65,9 @@ impl fmt::Display for Status {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug, Deserialize)]
 pub struct PassengerPatch {
-    pub uid: i64,
+    pub uid: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub status: Option<String>,
@@ -107,7 +109,7 @@ impl PassengerDao {
                 &data.get_status(),
             ])
             .build();
-        let query = sqlx::query_as::<_, (Passenger)>(&sql);
+        let query = sqlx::query_as::<_, Passenger>(&sql);
         let passenger = query.fetch_one(db).await?;
         Ok(passenger)
     }
@@ -137,17 +139,17 @@ impl PassengerDao {
     //     Ok(passengers)
     // }
 
-    pub async fn get(db: &Db, utx: &UserCtx, id: i64) -> Result<Passenger, model::Error> {
+    pub async fn get(db: &Db, _utx: &UserCtx, id: String) -> Result<Passenger, model::Error> {
         let sql = SqlBuilder::new()
             .select_from(Self::TABLE)
-            .where_clause("id = {}", id)
+            .where_clause("id = {}", id.clone())
             .build();
-        let query = sqlx::query_as::<_, (Passenger)>(&sql);
+        let query = sqlx::query_as::<_, Passenger>(&sql);
         let result = query.fetch_one(db).await;
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
-    pub async fn update(db: &Db, utx: &UserCtx, id: i64, data: PassengerPatch) -> Result<Passenger, model::Error> {
+    pub async fn update(db: &Db, utx: &UserCtx, id: String, data: PassengerPatch) -> Result<Passenger, model::Error> {
         let sql = SqlBuilder::new()
             .update(Self::TABLE)
             .set_columns_and_values(
@@ -159,24 +161,24 @@ impl PassengerDao {
                     &data.get_status(),
                 ],
             )
-            .where_clause("id = {}", id)
+            .where_clause("id = {}", id.clone())
             .build();
-        let query = sqlx::query_as::<_, (Passenger)>(&sql);
+        let query = sqlx::query_as::<_, Passenger>(&sql);
         let result = query.fetch_one(db).await;
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
-    pub async fn delete(db: &Db, utx: &UserCtx, id: i64) -> Result<(Passenger), model::Error> {
+    pub async fn delete(db: &Db, _utx: &UserCtx, id: String) -> Result<Passenger, model::Error> {
         let sql = SqlBuilder::new()
             .delete_from(Self::TABLE)
-            .where_clause("id = {}", id)
+            .where_clause("id = {}", id.clone())
             .build();
-        let query = sqlx::query_as::<_, (Passenger)>(&sql);
+        let query = sqlx::query_as::<_, Passenger>(&sql);
         let result = query.fetch_one(db).await;
         handle_fetch_one_result(result, Self::TABLE, id)
     }
 
-    pub async fn list(db: &Db, utx: &UserCtx) -> Result<Vec<Passenger>, model::Error> {
+    pub async fn list(db: &Db, _utx: &UserCtx) -> Result<Vec<Passenger>, model::Error> {
         let sql = SqlBuilder::new().select_from(Self::TABLE).order_by("id").build();
         let query = sqlx::query_as(&sql);
         let passengers = query.fetch_all(db).await?;
@@ -190,7 +192,7 @@ impl PassengerDao {
 fn handle_fetch_one_result(
     result: Result<Passenger, sqlx::Error>,
     typ: &'static str,
-    id: i64,
+    id: String,
 ) -> Result<Passenger, model::Error> {
     result.map_err(|sqlx_error| match sqlx_error {
         sqlx::Error::RowNotFound => model::Error::EntityNotFound(typ, id.to_string()),
